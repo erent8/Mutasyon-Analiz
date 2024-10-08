@@ -3,7 +3,7 @@ from difflib import SequenceMatcher
 import matplotlib.pyplot as plt
 import pandas as pd
 
-# DNA dizilerini dosyadan ya da kullanıcıdan alma seçeneği
+# DNA dizilerini dosyadan ya da kullanıcıdan alma seçeneği 
 def get_dna_sequences():
     choice = input("DNA dizisini dosyadan mı yüklemek istersiniz? (E/H): ").lower()
     if choice == 'e':
