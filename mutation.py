@@ -1,7 +1,7 @@
 import csv
 from difflib import SequenceMatcher
 import matplotlib.pyplot as plt
-import pandas as pd
+import pandas as pd 
 
 # DNA dizilerini dosyadan veya kullanıcıdan alma işlevi
 def get_dna_sequences():
