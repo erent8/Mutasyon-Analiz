@@ -1,158 +1,110 @@
 import csv
-from difflib import SequenceMatcher
+import pandas as pd
 import matplotlib.pyplot as plt
-import pandas as pd 
+from difflib import SequenceMatcher
 
-# DNA dizilerini dosyadan veya kullanıcıdan alma işlevi
 def get_dna_sequences():
     """
-    Kullanıcıya DNA dizisini dosyadan mı yoksa manuel mi gireceğini sorar.
-    Dosya seçilirse iki DNA dizisi dosyadan okunur, 
-    aksi takdirde kullanıcıdan manuel olarak alınır.
-    
+    Kullanıcıdan iki DNA dizisi alır.
+
     Returns:
-        dna1 (str): Birinci DNA dizisi.
-        dna2 (str): İkinci DNA dizisi.
+        tuple: İki DNA dizisini içeren tuple (dna1, dna2).
     """
-    choice = input("DNA dizisini dosyadan mı yüklemek istersiniz? (E/H): ").lower()
-    if choice == 'e':
-        file_path = input("Dosya yolunu girin: ")
-        with open(file_path, 'r') as file:
-            lines = file.readlines()
-            dna1 = lines[0].strip().upper()  # Dosyadan okunan ilk DNA dizisi
-            dna2 = lines[1].strip().upper()  # Dosyadan okunan ikinci DNA dizisi
-    else:
-        dna1 = input("Birinci DNA dizisini girin: ").upper()  # Kullanıcıdan alınan ilk DNA dizisi
-        dna2 = input("İkinci DNA dizisini girin: ").upper()  # Kullanıcıdan alınan ikinci DNA dizisi
+    dna1 = input("Birinci DNA dizisini girin: ").upper()
+    dna2 = input("İkinci DNA dizisini girin: ").upper()
     return dna1, dna2
 
-# DNA dizileri uzunluk karşılaştırması
 def check_length(dna1, dna2):
     """
-    İki DNA dizisinin uzunluklarını karşılaştırır ve eşit olup olmadığını bildirir.
+    İki DNA dizisinin uzunluklarının eşit olup olmadığını kontrol eder.
 
     Args:
         dna1 (str): Birinci DNA dizisi.
         dna2 (str): İkinci DNA dizisi.
 
     Returns:
-        bool: Dizilerin aynı uzunlukta olup olmadığını belirtir.
+        bool: Uzunluklar eşitse True, değilse False.
     """
-    if len(dna1) == len(dna2):
-        print("\nDiziler aynı uzunlukta, baz bazına karşılaştırma yapılacak.\n")
-        return True
-    else:
-        print("\nDiziler farklı uzunlukta, hizalama yapılacak.\n")
-        return False
+    return len(dna1) == len(dna2)
 
-# Aynı uzunluktaki diziler için mutasyonları bulma
-def find_mutations(dna1, dna2):
+def align_and_identify_mutations(dna1, dna2):
     """
-    İki aynı uzunluktaki DNA dizisini karşılaştırarak mutasyonları tespit eder.
+    İki farklı uzunluktaki DNA dizisini hizalayarak mutasyon türlerini bulur.
 
     Args:
         dna1 (str): Birinci DNA dizisi.
         dna2 (str): İkinci DNA dizisi.
 
     Returns:
-        mutations (list): Mutasyonların pozisyon ve değişikliklerini içeren liste.
-    """
-    mutations = []
-    for i in range(len(dna1)):
-        if dna1[i] != dna2[i]:
-            # Mutasyonun pozisyonu, orijinal ve mutasyonlu bazları listeye ekler
-            mutations.append((i + 1, dna1[i], dna2[i]))
-    return mutations
-
-# Farklı uzunluktaki diziler için hizalama ve mutasyon bulma
-def align_dna(dna1, dna2):
-    """
-    İki farklı uzunluktaki DNA dizisini hizalayarak mutasyonları bulur.
-
-    Args:
-        dna1 (str): Birinci DNA dizisi.
-        dna2 (str): İkinci DNA dizisi.
-
-    Returns:
-        mutations (list): Mutasyonların pozisyon ve değişikliklerini içeren liste.
+        list: Her mutasyon için pozisyon, orijinal, mutasyonlu ve tür bilgisi.
     """
     matcher = SequenceMatcher(None, dna1, dna2)
     mutations = []
+
     for opcode in matcher.get_opcodes():
         tag, a0, a1, b0, b1 = opcode
         if tag == 'replace':
-            mutations.append((a0 + 1, dna1[a0:a1], dna2[b0:b1]))  # Değiştirilen bazlar
+            mutations.append((a0 + 1, dna1[a0:a1], dna2[b0:b1], 'Replace'))
         elif tag == 'delete':
-            mutations.append((a0 + 1, dna1[a0:a1], '-'))  # Silinen bazlar
+            mutations.append((a0 + 1, dna1[a0:a1], '-', 'Deletion'))
         elif tag == 'insert':
-            mutations.append((a0 + 1, '-', dna2[b0:b1]))  # Eklenen bazlar
+            mutations.append((a0 + 1, '-', dna2[b0:b1], 'Insertion'))
+
     return mutations
 
-# Mutasyonları CSV dosyasına kaydetme işlevi
-def save_to_csv(mutations):
+def save_to_csv_extended(mutations):
     """
     Bulunan mutasyonları bir CSV dosyasına kaydeder.
 
     Args:
-        mutations (list): Mutasyonların pozisyon ve değişikliklerini içeren liste.
+        mutations (list): Mutasyon bilgilerini içeren liste.
     """
-    with open("mutations.csv", mode="w", newline='') as file:
+    with open("mutations_extended.csv", mode="w", newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(["Pozisyon", "Orijinal", "Mutasyonlu"])
+        writer.writerow(["Pozisyon", "Orijinal", "Mutasyonlu", "Tür"])
         writer.writerows(mutations)
-    print("\nMutasyonlar 'mutations.csv' dosyasına kaydedildi.")
+    print("\nGenişletilmiş mutasyonlar 'mutations_extended.csv' dosyasına kaydedildi.")
 
-# Mutasyon raporu oluşturma
-def report_mutations(mutations):
+def plot_mutation_positions(mutations):
     """
-    Bulunan mutasyonları kullanıcıya raporlar ve CSV dosyasına kaydeder.
-
-    Args:
-        mutations (list): Mutasyonların pozisyon ve değişikliklerini içeren liste.
-    """
-    if not mutations:
-        print("Hiçbir mutasyon tespit edilmedi.")
-    else:
-        print(f"Toplam {len(mutations)} mutasyon tespit edildi:")
-        for mutation in mutations:
-            print(f"Pozisyon {mutation[0]}: {mutation[1]} -> {mutation[2]}")
-        
-        save_to_csv(mutations)
-
-# Mutasyonları grafik olarak görselleştirme
-def plot_mutations(mutations):
-    """
-    Bulunan mutasyonları bir bar grafiği ile görselleştirir.
+    Mutasyonların pozisyonlarını ve türlerini bir nokta grafiği ile görselleştirir.
 
     Args:
-        mutations (list): Mutasyonların pozisyon ve değişikliklerini içeren liste.
+        mutations (list): Mutasyon bilgilerini içeren liste.
     """
-    df = pd.DataFrame(mutations, columns=['Pozisyon', 'Orijinal', 'Mutasyonlu'])
-    plt.bar(df['Pozisyon'], height=1)
-    plt.title("Mutasyonların Pozisyonları")
-    plt.xlabel("Pozisyon")
-    plt.ylabel("Mutasyon Sayısı")
+    df = pd.DataFrame(mutations, columns=['Pozisyon', 'Orijinal', 'Mutasyonlu', 'Tür'])
+    colors = {'Replace': 'red', 'Deletion': 'blue', 'Insertion': 'green'}
+
+    plt.figure(figsize=(10, 6))
+    for mutation_type, group in df.groupby('Tür'):
+        plt.scatter(group['Pozisyon'], [mutation_type] * len(group),
+                    color=colors[mutation_type], label=mutation_type, s=100, alpha=0.7)
+
+    plt.title("Mutasyon Pozisyonları ve Türleri", fontsize=14)
+    plt.xlabel("Pozisyon", fontsize=12)
+    plt.yticks(fontsize=10)
+    plt.legend(title="Mutasyon Türleri", fontsize=10)
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.tight_layout()
     plt.show()
 
-# Ana çalışma fonksiyonu
 def main():
     """
     Programın ana akışını yöneten işlev.
-    Kullanıcıdan DNA dizilerini alır, mutasyonları bulur, raporlar ve isteğe bağlı olarak grafik gösterir.
+    Kullanıcıdan DNA dizilerini alır, mutasyon türlerini bulur, raporlar ve görselleştirir.
     """
     dna1, dna2 = get_dna_sequences()
     if check_length(dna1, dna2):
-        mutations = find_mutations(dna1, dna2)  # Aynı uzunluktaki diziler için mutasyon bulma
+        mutations = align_and_identify_mutations(dna1, dna2)
     else:
-        mutations = align_dna(dna1, dna2)  # Farklı uzunluktaki diziler için hizalama ve mutasyon bulma
-    
-    report_mutations(mutations)
-    
-    # Kullanıcı grafik istiyorsa göster
-    show_graph = input("Mutasyonları grafik olarak görmek ister misiniz? (E/H): ").lower()
-    if show_graph == 'e':
-        plot_mutations(mutations)
+        mutations = align_and_identify_mutations(dna1, dna2)
 
-# Programın çalıştırılma noktası
+    save_to_csv_extended(mutations)
+
+    # Kullanıcı grafik istiyorsa göster
+    show_graph = input("Mutasyon pozisyonlarını grafik olarak görmek ister misiniz? (E/H): ").lower()
+    if show_graph == 'e':
+        plot_mutation_positions(mutations)
+
 if __name__ == "__main__":
     main()
