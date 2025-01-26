@@ -2,7 +2,7 @@ import csv
 import pandas as pd
 import matplotlib.pyplot as plt
 from difflib import SequenceMatcher
-
+ 
 def get_dna_sequences():
     """
     Kullanıcıdan iki DNA dizisi alır.
